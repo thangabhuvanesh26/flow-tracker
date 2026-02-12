@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regulatory Flow OS - Daily Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header .date {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+            font-weight: 600;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .task-item:hover {
+            background: #e9ecef;
+        }
+
+        .task-item.completed {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .task-detail {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .notes-section {
+            margin-top: 30px;
+        }
+
+        .notes-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 1em;
+            resize: vertical;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .history-btn {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .history-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .history-entry {
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .reminder-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .reminder-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+
+        .reminder-text {
+            color: #856404;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Regulatory Flow OS</h1>
+            <div class="date" id="currentDate"></div>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="survival" onclick="switchMode('survival')">
+                🛡️ Survival Mode
+            </button>
+            <button class="mode-btn" data-mode="ideal" onclick="switchMode('ideal')">
+                ⭐ Ideal Flow
+            </button>
+        </div>
+
+        <div class="content">
+            <div class="reminder-box" id="reminder">
+                <div class="reminder-title">🌟 Today's Reminder</div>
+                <div class="reminder-text">Survival Mode is the baseline, not failure. You are always meeting your standard.</div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar">0%</div>
+            </div>
+
+            <div id="survivalTasks" class="mode-content">
+                <div class="section">
+                    <div class="section-title">💪 Body</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="body-movement" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">5 Minutes of Movement</div>
+                            <div class="task-detail">Pushups, squats, stretching - Never zero</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🙏 Spirit</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="spirit-hoponopono" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Ho'oponopono</div>
+                            <div class="task-detail">During commute or while doing dishes - 5 min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🧠 Mind</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="mind-commute" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Commute Time</div>
+                            <div class="task-detail">432Hz music or silence - No forced intake</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">👨‍👩‍👧 Family</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="family-dinner" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Present at Dinner</div>
+                            <div class="task-detail">Phone in drawer - ~90 min</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="family-parents" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Call Parents</div>
+                            <div class="task-detail">Evening commute - 15 min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">💼 Work</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="work-show" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Show Up</div>
+                            <div class="task-detail">Do what's in front of you - No heroics</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">✍️ Content</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="content-sentence" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">One Insight</div>
+                            <div class="task-detail">One sentence in notes app - 2 min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">💑 Partner</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="partner-checkin" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Check-in Conversation</div>
+                            <div class="task-detail">"How are you doing? What do you need?" - 10 min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">😴 Sleep</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="sleep-hours" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">7.5 Hours Sleep</div>
+                            <div class="task-detail">Non-negotiable foundation</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="idealTasks" class="mode-content" style="display: none;">
+                <div class="section">
+                    <div class="section-title">🌅 Morning Activation (60-75 min)</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-workout" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Heavy Workout</div>
+                            <div class="task-detail">30 min - Protein + electrolytes after</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-hoponopono" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Ho'oponopono Session</div>
+                            <div class="task-detail">15 min focused practice</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-innerchild" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Inner Child Connection</div>
+                            <div class="task-detail">15 min - Ask what they need today</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-toddler" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Toddler Time</div>
+                            <div class="task-detail">Fully present - No phone</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🚗 Commute (90 min total)</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-learning" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Morning: Mobile University</div>
+                            <div class="task-detail">Audiobook/podcast on regulatory/AI</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-parents" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Evening: Parents Call</div>
+                            <div class="task-detail">Call first, then decompress</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">💼 Work (5 Hours Deep Work)</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-target" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Written Daily Target</div>
+                            <div class="task-detail">2 min - Single most important outcome</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-pomodoro" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Pomodoro Sessions</div>
+                            <div class="task-detail">50/10 cycles for deep work</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-document" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Document Solutions</div>
+                            <div class="task-detail">Capture problems solved (anonymized)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">📈 Growth (30-45 min, 3x/week)</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-content" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Content Creation</div>
+                            <div class="task-detail">Batch 2-3 posts or 1 carousel/week</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🏠 Evening Landing</div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-clothes" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Clothes Change Ritual</div>
+                            <div class="task-detail">Work clothes off = Work brain off</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-family" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Family Mode</div>
+                            <div class="task-detail">Phone in drawer - Floor time</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-partner" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Partner Check-in</div>
+                            <div class="task-detail">15-20 min real conversation</div>
+                        </div>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" class="checkbox" id="ideal-sleep" onchange="updateProgress()">
+                        <div class="task-content">
+                            <div class="task-title">Sleep Recovery</div>
+                            <div class="task-detail">In bed by 22:00 - Non-negotiable</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notes-section">
+                <div class="section-title">📝 Daily Notes & Insights</div>
+                <textarea class="notes-textarea" id="dailyNotes" placeholder="Capture insights, problems solved, or thoughts for future content..."></textarea>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="completedCount">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">9</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="streakCount">0</div>
+                    <div class="stat-label">Day Streak</div>
+                </div>
+            </div>
+
+            <button class="btn-save" onclick="saveProgress()">💾 Save Today's Progress</button>
+            <button class="history-btn" onclick="showHistory()">📊 View History</button>
+        </div>
+    </div>
+
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeHistory()">&times;</span>
+            <h2>📊 Progress History</h2>
+            <div id="historyContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'survival';
+
+        // Initialize date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Switch between modes
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+            if (mode === 'survival') {
+                document.getElementById('survivalTasks').style.display = 'block';
+                document.getElementById('idealTasks').style.display = 'none';
+                document.querySelector('.reminder-text').textContent =
+                    'Survival Mode is the baseline, not failure. You are always meeting your standard.';
+            } else {
+                document.getElementById('survivalTasks').style.display = 'none';
+                document.getElementById('idealTasks').style.display = 'block';
+                document.querySelector('.reminder-text').textContent =
+                    'Ideal Flow is earned by good sleep, stable circumstances, and cooperative energy. Push yourself today!';
+            }
+
+            loadTodayData();
+            updateProgress();
+        }
+
+        // Update progress bar and stats
+        function updateProgress() {
+            const visibleTasks = currentMode === 'survival' ?
+                document.querySelectorAll('#survivalTasks .checkbox') :
+                document.querySelectorAll('#idealTasks .checkbox');
+
+            const total = visibleTasks.length;
+            const completed = Array.from(visibleTasks).filter(cb => cb.checked).length;
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressBar').textContent = percentage + '%';
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('totalCount').textContent = total;
+        }
+
+        // Save progress
+        function saveProgress() {
+            const today = new Date().toISOString().split('T')[0];
+            const checkboxes = currentMode === 'survival' ?
+                document.querySelectorAll('#survivalTasks .checkbox') :
+                document.querySelectorAll('#idealTasks .checkbox');
+
+            const tasks = {};
+            checkboxes.forEach(cb => {
+                tasks[cb.id] = cb.checked;
+            });
+
+            const data = {
+                date: today,
+                mode: currentMode,
+                tasks: tasks,
+                notes: document.getElementById('dailyNotes').value,
+                timestamp: new Date().toISOString()
+            };
+
+            // Get all history
+            let history = JSON.parse(localStorage.getItem('flowHistory') || '[]');
+
+            // Remove today's entry if exists
+            history = history.filter(entry => entry.date !== today);
+
+            // Add new entry
+            history.unshift(data);
+
+            // Keep last 90 days
+            history = history.slice(0, 90);
+
+            localStorage.setItem('flowHistory', JSON.stringify(history));
+
+            // Update streak
+            updateStreak();
+
+            alert('✅ Progress saved successfully!');
+        }
+
+        // Load today's data
+        function loadTodayData() {
+            const today = new Date().toISOString().split('T')[0];
+            const history = JSON.parse(localStorage.getItem('flowHistory') || '[]');
+            const todayData = history.find(entry => entry.date === today);
+
+            if (todayData && todayData.mode === currentMode) {
+                // Restore checkboxes
+                Object.keys(todayData.tasks).forEach(id => {
+                    const checkbox = document.getElementById(id);
+                    if (checkbox) {
+                        checkbox.checked = todayData.tasks[id];
+                    }
+                });
+
+                // Restore notes
+                document.getElementById('dailyNotes').value = todayData.notes || '';
+            } else {
+                // Clear all checkboxes for new day or different mode
+                document.querySelectorAll('.checkbox').forEach(cb => cb.checked = false);
+                if (todayData && todayData.mode !== currentMode) {
+                    // Keep notes even when switching modes
+                    document.getElementById('dailyNotes').value = todayData.notes || '';
+                } else {
+                    document.getElementById('dailyNotes').value = '';
+                }
+            }
+
+            updateProgress();
+            updateStreak();
+        }
+
+        // Update streak counter
+        function updateStreak() {
+            const history = JSON.parse(localStorage.getItem('flowHistory') || '[]');
+            let streak = 0;
+            const today = new Date();
+
+            for (let i = 0; i < history.length; i++) {
+                const entryDate = new Date(history[i].date);
+                const daysDiff = Math.floor((today - entryDate) / (1000 * 60 * 60 * 24));
+
+                if (daysDiff === i) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+
+            document.getElementById('streakCount').textContent = streak;
+        }
+
+        // Show history modal
+        function showHistory() {
+            const history = JSON.parse(localStorage.getItem('flowHistory') || '[]');
+            const content = document.getElementById('historyContent');
+
+            if (history.length === 0) {
+                content.innerHTML = '<p>No history yet. Start tracking today!</p>';
+            } else {
+                content.innerHTML = history.map(entry => {
+                    const completed = Object.values(entry.tasks).filter(v => v).length;
+                    const total = Object.keys(entry.tasks).length;
+                    const percentage = Math.round((completed / total) * 100);
+
+                    return `
+                        <div class="history-entry">
+                            <strong>${new Date(entry.date).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}</strong>
+                            <div style="margin-top: 8px;">
+                                Mode: <strong>${entry.mode === 'survival' ? '🛡️ Survival' : '⭐ Ideal Flow'}</strong>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                Progress: ${completed}/${total} (${percentage}%)
+                            </div>
+                            ${entry.notes ? `<div style="margin-top: 8px; font-style: italic; color: #6c757d;">"${entry.notes}"</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('historyModal').classList.add('active');
+        }
+
+        // Close history modal
+        function closeHistory() {
+            document.getElementById('historyModal').classList.remove('active');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            loadTodayData();
+        });
+    </script>
+</body>
+</html>
