@@ -215,6 +215,71 @@
             color: white;
         }
 
+        .export-btn {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-left: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .weekly-summary {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .weekly-summary h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .summary-stat {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .summary-stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -560,7 +625,11 @@
             </div>
 
             <button class="btn-save" onclick="saveProgress()">💾 Save Today's Progress</button>
-            <button class="history-btn" onclick="showHistory()">📊 View History</button>
+            <div class="btn-container">
+                <button class="history-btn" onclick="showHistory()">📊 View History</button>
+                <button class="export-btn" onclick="exportToCSV()">📥 Export to CSV</button>
+                <button class="export-btn" onclick="showWeeklySummary()">📈 Weekly Summary</button>
+            </div>
         </div>
     </div>
 
@@ -569,6 +638,14 @@
             <span class="close-modal" onclick="closeHistory()">&times;</span>
             <h2>📊 Progress History</h2>
             <div id="historyContent"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="summaryModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeSummary()">&times;</span>
+            <h2>📈 Weekly Summary</h2>
+            <div id="summaryContent"></div>
         </div>
     </div>
 
@@ -756,6 +833,150 @@
             document.getElementById('historyModal').classList.remove('active');
         }
 
+        // Export to CSV
+        function exportToCSV() {
+            const history = JSON.parse(localStorage.getItem('flowHistory') || '[]');
+
+            if (history.length === 0) {
+                alert('No data to export yet. Start tracking your daily progress first!');
+                return;
+            }
+
+            // CSV Headers
+            let csv = 'Date,Day of Week,Mode,Completed Tasks,Total Tasks,Completion %,Notes\n';
+
+            // Add data rows
+            history.forEach(entry => {
+                const date = new Date(entry.date);
+                const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+                const completed = Object.values(entry.tasks).filter(v => v).length;
+                const total = Object.keys(entry.tasks).length;
+                const percentage = Math.round((completed / total) * 100);
+                const notes = (entry.notes || '').replace(/"/g, '""'); // Escape quotes
+
+                csv += `${entry.date},${dayOfWeek},${entry.mode},${completed},${total},${percentage}%,"${notes}"\n`;
+            });
+
+            // Create download link
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flow-tracker-export-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            alert('✅ Data exported successfully! Check your Downloads folder.');
+        }
+
+        // Show weekly summary
+        function showWeeklySummary() {
+            const history = JSON.parse(localStorage.getItem('flowHistory') || '[]');
+            const content = document.getElementById('summaryContent');
+
+            if (history.length === 0) {
+                content.innerHTML = '<p>No data yet. Start tracking to see your weekly summary!</p>';
+                document.getElementById('summaryModal').classList.add('active');
+                return;
+            }
+
+            // Get last 7 days
+            const today = new Date();
+            const last7Days = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateString = date.toISOString().split('T')[0];
+                last7Days.push(dateString);
+            }
+
+            // Filter history for last 7 days
+            const weekData = history.filter(entry => last7Days.includes(entry.date));
+
+            if (weekData.length === 0) {
+                content.innerHTML = '<p>No data for the past 7 days. Keep tracking!</p>';
+                document.getElementById('summaryModal').classList.add('active');
+                return;
+            }
+
+            // Calculate stats
+            const daysTracked = weekData.length;
+            const survivalDays = weekData.filter(e => e.mode === 'survival').length;
+            const idealDays = weekData.filter(e => e.mode === 'ideal').length;
+
+            let totalCompleted = 0;
+            let totalTasks = 0;
+            weekData.forEach(entry => {
+                totalCompleted += Object.values(entry.tasks).filter(v => v).length;
+                totalTasks += Object.keys(entry.tasks).length;
+            });
+
+            const avgCompletion = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+
+            // Build summary HTML
+            let html = `
+                <div class="weekly-summary">
+                    <h3>📅 Last 7 Days Performance</h3>
+                    <div class="summary-stats">
+                        <div class="summary-stat">
+                            <div class="summary-stat-value">${daysTracked}</div>
+                            <div class="summary-stat-label">Days Tracked</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-value">${avgCompletion}%</div>
+                            <div class="summary-stat-label">Avg Completion</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-value">${survivalDays}</div>
+                            <div class="summary-stat-label">Survival Days</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-value">${idealDays}</div>
+                            <div class="summary-stat-label">Ideal Flow Days</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px; color: #667eea;">Daily Breakdown</h3>
+            `;
+
+            // Add daily breakdown
+            weekData.forEach(entry => {
+                const completed = Object.values(entry.tasks).filter(v => v).length;
+                const total = Object.keys(entry.tasks).length;
+                const percentage = Math.round((completed / total) * 100);
+                const date = new Date(entry.date);
+
+                html += `
+                    <div class="history-entry">
+                        <strong>${date.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        })}</strong>
+                        <div style="margin-top: 8px;">
+                            Mode: <strong>${entry.mode === 'survival' ? '🛡️ Survival' : '⭐ Ideal Flow'}</strong>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            Progress: ${completed}/${total} (${percentage}%)
+                        </div>
+                        ${entry.notes ? `<div style="margin-top: 8px; font-style: italic; color: #6c757d;">"${entry.notes}"</div>` : ''}
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+            document.getElementById('summaryModal').classList.add('active');
+        }
+
+        // Close summary modal
+        function closeSummary() {
+            document.getElementById('summaryModal').classList.remove('active');
+        }
+
         // Initialize on load
         window.addEventListener('load', () => {
             loadTodayData();
@@ -763,3 +984,4 @@
     </script>
 </body>
 </html>
+
